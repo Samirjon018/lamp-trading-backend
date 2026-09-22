@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ticker — Demo Trading Simulyatori</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,72,400;0,72,500;0,72,600;1,72,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F2EEE3;
+    --panel: #FBF9F3;
+    --panel-line: #D8D2C2;
+    --ink: #142A38;
+    --ink-soft: #5B6B72;
+    --amber: #B9791E;
+    --amber-bg: #EFDDB8;
+    --rose: #A13E3E;
+    --rose-bg: #F0D9D4;
+    --accent-line: #142A38;
+    --focus: #2C6E8E;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0E1B24;
+      --panel: #142631;
+      --panel-line: #274152;
+      --ink: #EDE7D9;
+      --ink-soft: #93A6AD;
+      --amber: #E3A83B;
+      --amber-bg: #3A3020;
+      --rose: #E08080;
+      --rose-bg: #3A2222;
+      --accent-line: #EDE7D9;
+      --focus: #6FB8DC;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E1B24;
+    --panel: #142631;
+    --panel-line: #274152;
+    --ink: #EDE7D9;
+    --ink-soft: #93A6AD;
+    --amber: #E3A83B;
+    --amber-bg: #3A3020;
+    --rose: #E08080;
+    --rose-bg: #3A2222;
+    --accent-line: #EDE7D9;
+    --focus: #6FB8DC;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); height: 100%; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Newsreader', serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a, button { font-family: inherit; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+
+  /* Ticker tape header */
+  .tape-wrap {
+    position: sticky; top: 0; z-index: 10;
+    padding-top: env(safe-area-inset-top, 0px);
+    background: var(--ink);
+    border-bottom: 1px solid var(--panel-line);
+    overflow: hidden;
+  }
+  .tape {
+    display: flex;
+    white-space: nowrap;
+    animation: scroll 28s linear infinite;
+    padding: 9px 0;
+  }
+  .tape:hover { animation-play-state: paused; }
+  @keyframes scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .tape-item {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--bg);
+    padding: 0 22px;
+    border-right: 1px solid rgba(255,255,255,0.15);
+    letter-spacing: 0.01em;
+  }
+  .tape-item .sym { opacity: 0.65; margin-right: 8px; }
+  .tape-up { color: #7DBE8C; }
+  .tape-down { color: #E39494; }
+
+  header.masthead {
+    max-width: 1180px; margin: 0 auto;
+    padding: 28px 20px 18px;
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+  }
+  .brand {
+    font-size: 26px; font-weight: 600; letter-spacing: -0.01em;
+  }
+  .brand em { font-style: italic; color: var(--amber); }
+  .sub {
+    color: var(--ink-soft); font-size: 14.5px; max-width: 360px; line-height: 1.4;
+  }
+
+  main {
+    max-width: 1180px; margin: 0 auto; padding: 0 20px 60px;
+    display: grid;
+    grid-template-columns: 210px 1fr 300px;
+    gap: 18px;
+  }
+  @media (max-width: 900px) {
+    main { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-line);
+    border-radius: 3px;
+  }
+  .panel-title {
+    font-size: 12.5px; color: var(--ink-soft);
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid var(--panel-line);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* Asset list */
+  .asset-list { padding: 4px; }
+  .asset-row {
+    width: 100%; text-align: left; background: none; border: none;
+    padding: 11px 10px; border-radius: 2px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 3px;
+    color: var(--ink);
+  }
+  .asset-row:hover { background: var(--bg); }
+  .asset-row.active { background: var(--accent-line); color: var(--panel); }
+  .asset-row.active .a-price, .asset-row.active .a-name { color: var(--panel); }
+  .a-top { display: flex; justify-content: space-between; align-items: baseline; }
+  .a-sym { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; }
+  .a-name { font-size: 11.5px; color: var(--ink-soft); }
+  .a-price { font-family: 'IBM Plex Mono', monospace; font-size: 13.5px; }
+  .chg-up { color: var(--amber) !important; }
+  .chg-down { color: var(--rose) !important; }
+  .asset-row.active .chg-up { color: #E3C98B !important; }
+  .asset-row.active .chg-down { color: #E3AEAE !important; }
+
+  /* Chart panel */
+  .chart-head {
+    padding: 16px 18px 4px;
+    display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;
+  }
+  .chart-head h2 { margin: 0; font-size: 22px; font-weight: 500; }
+  .chart-head .name { color: var(--ink-soft); font-size: 13px; }
+  .price-now { font-family: 'IBM Plex Mono', monospace; font-size: 26px; text-align: right; }
+  .price-delta { font-family: 'IBM Plex Mono', monospace; font-size: 13px; text-align: right; }
+  canvas#chart { width: 100%; height: 230px; display: block; }
+  .chart-body { padding: 6px 14px 4px; }
+
+  .order-form {
+    padding: 14px 18px 18px;
+    border-top: 1px solid var(--panel-line);
+    display: flex; gap: 10px; align-items: end; flex-wrap: wrap;
+  }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 11.5px; color: var(--ink-soft); font-family: 'IBM Plex Mono', monospace; }
+  .field input {
+    font-family: 'IBM Plex Mono', monospace; font-size: 14px;
+    padding: 8px 10px; border: 1px solid var(--panel-line); border-radius: 2px;
+    background: var(--bg); color: var(--ink); width: 110px;
+  }
+  .field input:focus, button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
+  .est { font-size: 12px; color: var(--ink-soft); font-family: 'IBM Plex Mono', monospace; margin-right: auto; align-self: center; }
+  .btn {
+    border: none; border-radius: 2px; padding: 10px 18px; font-size: 14px; cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace; font-weight: 500;
+  }
+  .btn-buy { background: var(--amber); color: #1E1400; }
+  .btn-sell { background: var(--rose); color: #290000; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn:hover:not(:disabled) { filter: brightness(1.06); }
+
+  /* Right column */
+  .right-col { display: flex; flex-direction: column; gap: 18px; }
+  .balance-block { padding: 16px 18px; }
+  .balance-label { font-size: 11.5px; color: var(--ink-soft); font-family: 'IBM Plex Mono', monospace; }
+  .balance-num { font-family: 'IBM Plex Mono', monospace; font-size: 28px; margin-top: 4px; }
+  .equity-row { display: flex; justify-content: space-between; margin-top: 12px; font-size: 13px; font-family: 'IBM Plex Mono', monospace; color: var(--ink-soft); }
+  .equity-row b { color: var(--ink); font-weight: 500; }
+
+  .holdings-list { padding: 6px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .holding { display: flex; justify-content: space-between; font-size: 13px; font-family: 'IBM Plex Mono', monospace; }
+  .holding .h-sym { color: var(--ink); font-weight: 600; }
+  .holding .h-qty { color: var(--ink-soft); }
+  .empty-note { padding: 14px; color: var(--ink-soft); font-size: 13px; line-height: 1.5; }
+
+  .log-list { max-height: 220px; overflow-y: auto; padding: 6px 14px 14px; display: flex; flex-direction: column; gap: 8px; }
+  .log-item { font-size: 12.5px; font-family: 'IBM Plex Mono', monospace; display: flex; justify-content: space-between; color: var(--ink-soft); border-bottom: 1px dashed var(--panel-line); padding-bottom: 6px; }
+  .log-item b { color: var(--ink); }
+  .log-item .lb { color: var(--amber); }
+  .log-item .ls { color: var(--rose); }
+
+  .reset-row { padding: 12px 18px 4px; text-align: right; }
+  .reset-btn {
+    background: none; border: 1px solid var(--panel-line); color: var(--ink-soft);
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; padding: 6px 10px; border-radius: 2px; cursor: pointer;
+  }
+  .reset-btn:hover { border-color: var(--ink-soft); color: var(--ink); }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--panel-line); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="tape-wrap"><div class="tape" id="tape"></div></div>
+
+<header class="masthead">
+  <div>
+    <div class="brand">Ticker <em>Demo</em></div>
+    <div class="sub">Sotib olish va sotishni xavfsiz sinab ko'ring — real pul ishtirok etmaydi. Narxlar tasodifiy simulyatsiya bilan yangilanadi.</div>
+  </div>
+  <div class="reset-row" style="padding:0;">
+    <button class="reset-btn" id="resetBtn">Boshidan boshlash</button>
+  </div>
+</header>
+
+<main>
+  <div class="panel">
+    <div class="panel-title">AKTIVLAR</div>
+    <div class="asset-list" id="assetList"></div>
+  </div>
+
+  <div class="panel">
+    <div class="chart-head">
+      <div>
+        <h2 id="selSym">—</h2>
+        <div class="name" id="selName">—</div>
+      </div>
+      <div>
+        <div class="price-now mono" id="selPrice">—</div>
+        <div class="price-delta mono" id="selDelta">—</div>
+      </div>
+    </div>
+    <div class="chart-body">
+      <canvas id="chart" width="640" height="230"></canvas>
+    </div>
+    <div class="order-form">
+      <div class="field">
+        <label for="qtyInput">MIQDOR</label>
+        <input id="qtyInput" type="number" min="0" step="0.0001" value="1">
+      </div>
+      <div class="est" id="estCost">≈ $0.00</div>
+      <button class="btn btn-buy" id="buyBtn">Sotib olish</button>
+      <button class="btn btn-sell" id="sellBtn">Sotish</button>
+    </div>
+  </div>
+
+  <div class="right-col">
+    <div class="panel balance-block">
+      <div class="balance-label">MUVOZANAT (USD)</div>
+      <div class="balance-num" id="balanceNum">$0.00</div>
+      <div class="equity-row"><span>Portfolio qiymati</span><b id="portVal">$0.00</b></div>
+      <div class="equity-row"><span>Umumiy foyda/zarar</span><b id="pnlVal">$0.00</b></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">SAQLANMALAR</div>
+      <div class="holdings-list" id="holdingsList"><div class="empty-note">Hozircha hech narsa sotib olinmagan.</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">AMALIYOTLAR TARIXI</div>
+      <div class="log-list" id="logList"><div class="empty-note">Amaliyotlar bu yerda ko'rinadi.</div></div>
+    </div>
+  </div>
+</main>
+
+<script>
+(function(){
+  var ASSET_DEFS = [
+    {sym:'BTC', name:'Bitcoin',        base:62000, vol:0.006},
+    {sym:'ETH', name:'Ethereum',       base:3400,  vol:0.007},
+    {sym:'GOLD',name:'Oltin (XAU)',    base:2380,  vol:0.002},
+    {sym:'OIL', name:'Neft (Brent)',   base:82,    vol:0.004},
+    {sym:'AAPL',name:'Apple Inc.',     base:228,   vol:0.003},
+    {sym:'UZS4',name:"O'zbek indeksi", base:1140,  vol:0.0035}
+  ];
+  var HIST_LEN = 60;
+  var STARTING_BALANCE = 10000;
+
+  var state = null;
+
+  function freshState(){
+    var assets = {};
+    ASSET_DEFS.forEach(function(d){
+      var hist = [];
+      var p = d.base;
+      for (var i=0;i<HIST_LEN;i++){ hist.push(p); }
+      assets[d.sym] = { price: p, prevPrice: p, hist: hist, vol: d.vol, base: d.base };
+    });
+    return {
+      balance: STARTING_BALANCE,
+      assets: assets,
+      holdings: {}, // sym -> {qty, avgCost}
+      log: [],
+      selected: ASSET_DEFS[0].sym
+    };
+  }
+
+  function loadState(){
+    try {
+      var raw = localStorage.getItem('ticker-demo-state-v1');
+      if (!raw) return freshState();
+      var parsed = JSON.parse(raw);
+      if (!parsed || !parsed.assets) return freshState();
+      return parsed;
+    } catch(e){ return freshState(); }
+  }
+
+  function saveState(){
+    try { localStorage.setItem('ticker-demo-state-v1', JSON.stringify(state)); }
+    catch(e){ /* ignore */ }
+  }
+
+  state = loadState();
+
+  function fmt(n, digits){
+    if (digits === undefined) digits = 2;
+    var sign = n < 0 ? '-' : '';
+    n = Math.abs(n);
+    return sign + '$' + n.toLocaleString('en-US', {minimumFractionDigits: digits, maximumFractionDigits: digits});
+  }
+  function fmtQty(n){
+    return (Math.round(n * 10000) / 10000).toString();
+  }
+
+  function tick(){
+    ASSET_DEFS.forEach(function(d){
+      var a = state.assets[d.sym];
+      a.prevPrice = a.price;
+      var shock = (Math.random() - 0.5) * 2 * a.vol;
+      var meanPull = (a.base - a.price) / a.base * 0.02;
+      var next = a.price * (1 + shock + meanPull);
+      if (next < a.base * 0.2) next = a.base * 0.2;
+      a.price = next;
+      a.hist.push(next);
+      if (a.hist.length > HIST_LEN) a.hist.shift();
+    });
+    renderAll();
+    saveState();
+  }
+
+  function renderTape(){
+    var html = '';
+    for (var rep=0; rep<2; rep++){
+      ASSET_DEFS.forEach(function(d){
+        var a = state.assets[d.sym];
+        var up = a.price >= a.prevPrice;
+        var pct = ((a.price - a.prevPrice) / a.prevPrice * 100);
+        html += '<span class="tape-item"><span class="sym">'+d.sym+'</span>' +
+          '$'+a.price.toFixed(2) + ' ' +
+          '<span class="'+(up?'tape-up':'tape-down')+'">'+(up?'▲':'▼')+' '+Math.abs(pct).toFixed(2)+'%</span></span>';
+      });
+    }
+    document.getElementById('tape').innerHTML = html;
+  }
+
+  function renderAssetList(){
+    var el = document.getElementById('assetList');
+    el.innerHTML = '';
+    ASSET_DEFS.forEach(function(d){
+      var a = state.assets[d.sym];
+      var up = a.price >= a.prevPrice;
+      var row = document.createElement('button');
+      row.className = 'asset-row' + (state.selected === d.sym ? ' active' : '');
+      row.innerHTML =
+        '<div class="a-top"><span class="a-sym">'+d.sym+'</span>' +
+        '<span class="a-price '+(up?'chg-up':'chg-down')+'">$'+a.price.toFixed(2)+'</span></div>' +
+        '<span class="a-name">'+d.name+'</span>';
+      row.addEventListener('click', function(){ state.selected = d.sym; renderAll(); });
+      el.appendChild(row);
+    });
+  }
+
+  function drawChart(){
+    var canvas = document.getElementById('chart');
+    var ctx = canvas.getContext('2d');
+    var dpr = window.devicePixelRatio || 1;
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    canvas.width = w * dpr; canvas.height = h * dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,w,h);
+
+    var a = state.assets[state.selected];
+    var hist = a.hist;
+    var min = Math.min.apply(null, hist), max = Math.max.apply(null, hist);
+    if (min === max) { min -= 1; max += 1; }
+    var pad = 8;
+    var styles = getComputedStyle(document.documentElement);
+    var lineColor = a.price >= hist[0] ? styles.getPropertyValue('--amber').trim() : styles.getPropertyValue('--rose').trim();
+    var gridColor = styles.getPropertyValue('--panel-line').trim();
+
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = 1;
+    for (var g=0; g<=3; g++){
+      var gy = pad + (h - pad*2) * g/3;
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+    }
+
+    ctx.beginPath();
+    hist.forEach(function(v, i){
+      var x = (i/(hist.length-1)) * w;
+      var y = pad + (h - pad*2) * (1 - (v - min)/(max - min));
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    var lastX = w, lastY = pad + (h - pad*2) * (1 - (hist[hist.length-1] - min)/(max-min));
+    ctx.fillStyle = lineColor;
+    ctx.beginPath(); ctx.arc(lastX-2, lastY, 3, 0, Math.PI*2); ctx.fill();
+  }
+
+  function renderSelected(){
+    var d = ASSET_DEFS.find(function(x){ return x.sym === state.selected; });
+    var a = state.assets[state.selected];
+    document.getElementById('selSym').textContent = d.sym;
+    document.getElementById('selName').textContent = d.name;
+    document.getElementById('selPrice').textContent = '$' + a.price.toFixed(2);
+    var deltaEl = document.getElementById('selDelta');
+    var diff = a.price - a.hist[0];
+    var pct = diff / a.hist[0] * 100;
+    var up = diff >= 0;
+    deltaEl.textContent = (up?'▲ ':'▼ ') + (up?'+':'') + diff.toFixed(2) + ' (' + (up?'+':'') + pct.toFixed(2) + '%)';
+    deltaEl.className = 'price-delta mono ' + (up ? 'chg-up' : 'chg-down');
+    updateEstimate();
+    drawChart();
+  }
+
+  function updateEstimate(){
+    var qty = parseFloat(document.getElementById('qtyInput').value) || 0;
+    var a = state.assets[state.selected];
+    document.getElementById('estCost').textContent = '≈ ' + fmt(qty * a.price);
+    var holding = state.holdings[state.selected];
+    document.getElementById('sellBtn').disabled = !holding || holding.qty < qty || qty <= 0;
+    document.getElementById('buyBtn').disabled = qty <= 0 || qty * a.price > state.balance;
+  }
+
+  function renderBalance(){
+    document.getElementById('balanceNum').textContent = fmt(state.balance);
+    var portVal = 0, costBasis = 0;
+    Object.keys(state.holdings).forEach(function(sym){
+      var h = state.holdings[sym];
+      portVal += h.qty * state.assets[sym].price;
+      costBasis += h.qty * h.avgCost;
+    });
+    document.getElementById('portVal').textContent = fmt(portVal);
+    var pnl = (state.balance + portVal) - STARTING_BALANCE;
+    var pnlEl = document.getElementById('pnlVal');
+    pnlEl.textContent = (pnl>=0?'+':'') + fmt(pnl);
+    pnlEl.className = pnl >= 0 ? 'chg-up' : 'chg-down';
+  }
+
+  function renderHoldings(){
+    var el = document.getElementById('holdingsList');
+    var syms = Object.keys(state.holdings).filter(function(s){ return state.holdings[s].qty > 0; });
+    if (syms.length === 0){
+      el.innerHTML = '<div class="empty-note">Hozircha hech narsa sotib olinmagan.</div>';
+      return;
+    }
+    el.innerHTML = '';
+    syms.forEach(function(sym){
+      var h = state.holdings[sym];
+      var curVal = h.qty * state.assets[sym].price;
+      var pnl = curVal - h.qty * h.avgCost;
+      var row = document.createElement('div');
+      row.className = 'holding';
+      row.innerHTML = '<span><span class="h-sym">'+sym+'</span> <span class="h-qty">'+fmtQty(h.qty)+'</span></span>' +
+        '<span class="'+(pnl>=0?'chg-up':'chg-down')+'">'+(pnl>=0?'+':'')+fmt(pnl)+'</span>';
+      el.appendChild(row);
+    });
+  }
+
+  function renderLog(){
+    var el = document.getElementById('logList');
+    if (state.log.length === 0){
+      el.innerHTML = '<div class="empty-note">Amaliyotlar bu yerda ko\'rinadi.</div>';
+      return;
+    }
+    el.innerHTML = '';
+    state.log.slice().reverse().slice(0, 30).forEach(function(entry){
+      var row = document.createElement('div');
+      row.className = 'log-item';
+      row.innerHTML = '<span><b>'+entry.sym+'</b> ' + '<span class="'+(entry.side==='BUY'?'lb':'ls')+'">'+(entry.side==='BUY'?'OLDI':'SOTDI')+'</span> ' + fmtQty(entry.qty) + '</span><span>' + fmt(entry.total) + '</span>';
+      el.appendChild(row);
+    });
+  }
+
+  function renderAll(){
+    renderTape();
+    renderAssetList();
+    renderSelected();
+    renderBalance();
+    renderHoldings();
+    renderLog();
+  }
+
+  function doBuy(){
+    var qty = parseFloat(document.getElementById('qtyInput').value) || 0;
+    if (qty <= 0) return;
+    var a = state.assets[state.selected];
+    var cost = qty * a.price;
+    if (cost > state.balance) return;
+    state.balance -= cost;
+    var h = state.holdings[state.selected] || {qty:0, avgCost:0};
+    var newQty = h.qty + qty;
+    h.avgCost = (h.avgCost * h.qty + cost) / newQty;
+    h.qty = newQty;
+    state.holdings[state.selected] = h;
+    state.log.push({sym: state.selected, side:'BUY', qty: qty, total: cost});
+    renderAll(); saveState();
+  }
+
+  function doSell(){
+    var qty = parseFloat(document.getElementById('qtyInput').value) || 0;
+    var h = state.holdings[state.selected];
+    if (!h || qty <= 0 || qty > h.qty) return;
+    var a = state.assets[state.selected];
+    var proceeds = qty * a.price;
+    state.balance += proceeds;
+    h.qty -= qty;
+    state.log.push({sym: state.selected, side:'SELL', qty: qty, total: proceeds});
+    renderAll(); saveState();
+  }
+
+  document.getElementById('buyBtn').addEventListener('click', doBuy);
+  document.getElementById('sellBtn').addEventListener('click', doSell);
+  document.getElementById('qtyInput').addEventListener('input', updateEstimate);
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    if (!confirm("Haqiqatan ham boshidan boshlaymiz? Barcha ma'lumotlar o'chiriladi.")) return;
+    state = freshState();
+    saveState();
+    renderAll();
+  });
+
+  window.addEventListener('resize', drawChart);
+
+  renderAll();
+  setInterval(tick, 1500);
+})();
+</script>
+</body>
+</html>
