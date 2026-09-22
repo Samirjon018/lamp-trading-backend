@@ -40,9 +40,11 @@ const UserSchema = new mongoose.Schema({
 const User = mongoose.model('User', UserSchema);
 
 // MongoDB Ulanishi
-mongoose.connect('mongodb://127.0.0.1:27017/lamp_trading')
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/lamp_trading';
+
+mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB bazasiga ulanish muvaffaqiyatli!'))
-  .catch(err => console.log('⚠️ MongoDB ulanishida xatolik (Lokal Mongo yoqilganini tekshiring)'));
+  .catch(err => console.log('⚠️ MongoDB ulanishida xatolik:', err.message));
 
 // XAVFSIZLIK MIDDLEWARE (JWT Token tekshirish)
 const authenticateToken = (req, res, next) => {
