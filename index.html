@@ -392,6 +392,9 @@
   </div>
 
   <script>
+    // Scriptning eng yuqori qismiga qo'yiladi:
+const API_URL = 'https://lamp-trading-backend.onrender.com';
+// const socket = new WebSocket('wss://lamp-trading-backend.onrender.com');
     // 1. Pozitsiya ochish (BUY / SELL tugmasi bosilganda)
 async function openTrade(type) {
   const token = localStorage.getItem('token');
@@ -400,7 +403,7 @@ async function openTrade(type) {
   const leverage = parseInt(document.getElementById('tradeLeverage').value) || 10;
 
   try {
-    const res = await fetch('http://localhost:5000/api/trade/open', {
+    const res = await fetch(`${API_URL}/api/trade/open`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -426,7 +429,7 @@ async function closeTrade(positionId) {
   const token = localStorage.getItem('token');
 
   try {
-    const res = await fetch('http://localhost:5000/api/trade/close', {
+    const res = await fetch(`${API_URL}/api/trade/close`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -452,7 +455,7 @@ async function changePassword(oldPassword, newPassword) {
   const token = localStorage.getItem('token');
 
   try {
-    const res = await fetch('http://localhost:5000/api/user/change-password', {
+    const res = await fetch(`${API_URL}/api/user/change-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -468,11 +471,11 @@ async function changePassword(oldPassword, newPassword) {
   }
 }
     // 1. Backend bilan WebSocket ulanishi (Jonli narxlar uchun)
-const socket = new WebSocket('ws://localhost:5000');
+// const socket = new WebSocket('wss://lamp-trading-backend.onrender.com');
 
-socket.onopen = () => {
-  console.log('✅ Server bilan WebSocket aloqasi o\'rnatildi!');
-};
+// socket.onopen = () => {
+//   console.log('✅ Server bilan WebSocket aloqasi o\'rnatildi!');
+// };
 
 socket.onmessage = (event) => {
   const data = JSON.parse(event.data);
@@ -481,7 +484,7 @@ socket.onmessage = (event) => {
     // Serverdan kelayotgan real-vaqt narxlari
     const livePrices = data.prices;
     
-    // Agar ekranda narxlarni ko'rsatadigan elementlar bo'lsa, ularni yangilaymiz:
+    // Agar ekranda narxlarni ko'rsatadigan elementlar bo'lsa, ularни yangilaymiz:
     if (document.getElementById('btcPrice')) {
       document.getElementById('btcPrice').innerText = '$' + livePrices.BTC.toFixed(2);
     }
@@ -497,7 +500,7 @@ socket.onmessage = (event) => {
 // 2. Real Login funksiyasi (Server API orqali)
 async function loginUser(username, password) {
   try {
-    const response = await fetch('http://localhost:5000/api/auth/login', {
+    const response = await fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -526,7 +529,7 @@ async function loginUser(username, password) {
 // 3. Real Ro'yxatdan o'tish (Register) funksiyasi
 async function registerUser(username, password) {
   try {
-    const response = await fetch('http://localhost:5000/api/auth/register', {
+    const response = await fetch(`${API_URL}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
